@@ -16,8 +16,8 @@ This repository is designed to provide a framework for solving the **Multi-Depot
 ├── case_2_cost/                     # Datasets for cost-based cases
 ├── case_3_big_distances_small_demands_old/ # Archived version of case 3 datasets
 ├── case_3_supply_limits/            # Case with supply constraints
-├── case_4_capacitated_depots/       # Case with depot capacity constraints
-├── case_4_multi_product_old/        # Archived version of multi-product cases
+├── case_4_capacitated_depots_old/       # Archived version of case 4 Case with depot capacity constraints
+├── case_4_multi_product/            # multi-product cases
 ├── case_5_recharge_nodes/           # Case with recharge nodes for vehicles
 ├── class-based-model.py             # Python example on how a class based model with pyomo should look like
 ├── cvrp_map.html                    # Example HTML visualization for routes
