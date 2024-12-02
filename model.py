@@ -1,4 +1,48 @@
 from pyomo.environ import *
+import pandas as pd
+
+clients = pd.read_csv('case_1_base\Clients.csv')  # Ubicaciones de los clientes
+depots = pd.read_csv('case_1_base\Depots.csv')    # Ubicaciones de los depósitos
+distancias=pd.read_csv('Matrices\distancias1.csv')
+tiempos=pd.read_csv('Matrices\tiempos1.csv')
+vehicles = pd.read_csv('case_1_base\Vehicles.csv') 
+
+# Crear conjuntos
+clientes = clients['ID'].tolist()  # IDs de los clientes
+centros = depots['ID'].tolist()   # IDs de los depósitos
+vehiculos = vehicles['ID'].tolist()  # IDs de los vehículos
+productos = ['A', 'B', 'C']  # Definimos tipos de productos (puedes ajustar según el problema)
+nodos = clientes + centros  # Todos los nodos (clientes + depósitos)
+
+# Crear parámetros
+# 1. Demandas de clientes por producto (puede venir de Clients.csv o ser constante)
+demandas = {(row['ID'], p): row[f'Demanda_{p}'] for _, row in clients.iterrows() for p in productos}
+
+# 2. Capacidades de los vehículos (Vehicles.csv)
+capacidad_vehiculo = {row['ID']: row['Capacidad'] for _, row in vehicles.iterrows()}
+
+# 3. Rango máximo de los vehículos (Vehicles.csv)
+rango_vehiculo = {row['ID']: row['Rango'] for _, row in vehicles.iterrows()}
+
+# 4. Costos por kilómetro y minuto (Vehicles.csv)
+costos_km = {row['ID']: row['Costo_KM'] for _, row in vehicles.iterrows()}
+costos_minuto = {row['ID']: row['Costo_Minuto'] for _, row in vehicles.iterrows()}
+
+# 5. Costos de mantenimiento y recarga (Vehicles.csv)
+costos_mantenimiento = {row['ID']: row['Costo_Mantenimiento'] for _, row in vehicles.iterrows()}
+costos_recarga = {row['ID']: row['Costo_Recarga'] for _, row in vehicles.iterrows()}
+
+# 6. Capacidades de los centros de distribución (Depots.csv)
+capacidades_centro = {(row['ID'], p): row[f'Capacidad_{p}'] for _, row in depots.iterrows() for p in productos}
+
+# 7. Distancias y tiempos (distancias1.csv y tiempos1.csv)
+# Convertir archivos CSV a diccionarios
+distancias_dict = {(row['Desde'], row['Hacia']): row['Distancia'] for _, row in distancias.iterrows()}
+tiempos_dict = {(row['Desde'], row['Hacia']): row['Tiempo'] for _, row in tiempos.iterrows()}
+
+# Validar dimensiones
+print(f"Clientes: {len(clientes)}, Centros: {len(centros)}, Vehículos: {len(vehiculos)}, Nodos: {len(nodos)}")
+
 
 class VRPModel:
     def __init__(self, clientes, centros, vehiculos, productos, distancias, tiempos, demandas, capacidad_vehiculo, rango_vehiculo, costos_km, costos_minuto, costos_mantenimiento, costos_recarga, capacidades_centro):
