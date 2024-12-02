@@ -1,39 +1,88 @@
 from pyomo.environ import *
 import pandas as pd
 
-clients = pd.read_csv('case_1_base\Clients.csv')  # Ubicaciones de los clientes
-depots = pd.read_csv('case_1_base\Depots.csv')    # Ubicaciones de los depósitos
-distancias=pd.read_csv('Matrices\distancias1.csv')
-tiempos=pd.read_csv('Matrices\tiempos1.csv')
-vehicles = pd.read_csv('case_1_base\Vehicles.csv') 
+# Cambiar las rutas de los archivos
+clients = pd.read_csv(r'case_1_base/Clients.csv')  # Clientes
+depots = pd.read_csv(r'case_1_base/Depots.csv')    # Depósitos
+distancias = pd.read_csv(r'Matrices/distancias1.csv')  # Matriz de distancias
+tiempos = pd.read_csv(r'Matrices/tiempos1.csv')        # Matriz de tiempos
+vehicles = pd.read_csv(r'case_1_base/Vehicles.csv')    # Vehículos
 
+# Freight Rate [COP/km]
+costos_km = {
+    'Gas Car': 5000,
+    'drone': 500,
+    'EV': 4000
+}
+
+# Time Rate [COP/min]
+costos_minuto = {
+    'Gas Car': 500,
+    'drone': 500,
+    'EV': 500
+}
+
+# Daily Maintenance [COP/day]
+costos_mantenimiento = {
+    'Gas Car': 30000,
+    'drone': 3000,
+    'EV': 21000
+}
+
+# Recharge/Fuel Cost [COP/(gal or kWh)]
+costos_recarga = {
+    'Gas Car': 16000,
+    'drone': 220.73,
+    'EV': 0  # Asumimos que no tiene costo de recarga
+}
+
+# Recharge/Fuel Time [min/10% charge]
+tiempo_recarga = {
+    'Gas Car': 0.1,
+    'drone': 2,
+    'EV': 0  # Asumimos que no necesita recarga
+}
+
+# Gas Efficiency [km/gal]
+eficiencia_combustible = {
+    'Gas Car': 10,
+    'drone': 0,  # No aplica
+    'EV': 0  # No aplica
+}
+
+# Electricity Efficiency [kWh/km]
+eficiencia_electrica = {
+    'Gas Car': 0,  # No aplica
+    'drone': 0.15,
+    'EV': 0.15
+}
+
+
+vehicles['ID'] = ['V' + str(i + 1) for i in range(len(vehicles))]
 # Crear conjuntos
-clientes = clients['ID'].tolist()  # IDs de los clientes
-centros = depots['ID'].tolist()   # IDs de los depósitos
+clientes = clients['ClientID'].tolist()  # IDs de los clientes
+centros = depots['DepotID'].tolist()   # IDs de los depósitos
 vehiculos = vehicles['ID'].tolist()  # IDs de los vehículos
-productos = ['A', 'B', 'C']  # Definimos tipos de productos (puedes ajustar según el problema)
+productos = ['Product']  # Definimos tipos de productos (puedes ajustar según el problema)
 nodos = clientes + centros  # Todos los nodos (clientes + depósitos)
 
+clients.columns = clients.columns.str.strip()
 # Crear parámetros
 # 1. Demandas de clientes por producto (puede venir de Clients.csv o ser constante)
-demandas = {(row['ID'], p): row[f'Demanda_{p}'] for _, row in clients.iterrows() for p in productos}
+demandas = {(row['ClientID'], p): row['Product'] for _, row in clients.iterrows() for p in productos}
 
 # 2. Capacidades de los vehículos (Vehicles.csv)
-capacidad_vehiculo = {row['ID']: row['Capacidad'] for _, row in vehicles.iterrows()}
+capacidad_vehiculo = {row['ID']: row['Capacity'] for _, row in vehicles.iterrows()}
 
 # 3. Rango máximo de los vehículos (Vehicles.csv)
-rango_vehiculo = {row['ID']: row['Rango'] for _, row in vehicles.iterrows()}
-
-# 4. Costos por kilómetro y minuto (Vehicles.csv)
-costos_km = {row['ID']: row['Costo_KM'] for _, row in vehicles.iterrows()}
-costos_minuto = {row['ID']: row['Costo_Minuto'] for _, row in vehicles.iterrows()}
+rango_vehiculo = {row['ID']: row['Range'] for _, row in vehicles.iterrows()}
 
 # 5. Costos de mantenimiento y recarga (Vehicles.csv)
 costos_mantenimiento = {row['ID']: row['Costo_Mantenimiento'] for _, row in vehicles.iterrows()}
 costos_recarga = {row['ID']: row['Costo_Recarga'] for _, row in vehicles.iterrows()}
 
 # 6. Capacidades de los centros de distribución (Depots.csv)
-capacidades_centro = {(row['ID'], p): row[f'Capacidad_{p}'] for _, row in depots.iterrows() for p in productos}
+capacidades_centro = {(row['DepotID'], p): row[f'Capacidad_{p}'] for _, row in depots.iterrows() for p in productos}
 
 # 7. Distancias y tiempos (distancias1.csv y tiempos1.csv)
 # Convertir archivos CSV a diccionarios
@@ -43,9 +92,9 @@ tiempos_dict = {(row['Desde'], row['Hacia']): row['Tiempo'] for _, row in tiempo
 # Validar dimensiones
 print(f"Clientes: {len(clientes)}, Centros: {len(centros)}, Vehículos: {len(vehiculos)}, Nodos: {len(nodos)}")
 
-
+pass
 class VRPModel:
-    def __init__(self, clientes, centros, vehiculos, productos, distancias, tiempos, demandas, capacidad_vehiculo, rango_vehiculo, costos_km, costos_minuto, costos_mantenimiento, costos_recarga, capacidades_centro):
+    def __init__(self, clientes, centros, vehiculos, productos, distancias, tiempos, demandas, capacidad_vehiculo, rango_vehiculo, costos_operativos, costos_mantenimiento, costos_recarga, capacidades_centro):
         """
         Inicializar parámetros del modelo VRP.
         """
@@ -60,8 +109,7 @@ class VRPModel:
         self.demandas = demandas
         self.capacidad_vehiculo = capacidad_vehiculo
         self.rango_vehiculo = rango_vehiculo
-        self.costos_km = costos_km
-        self.costos_minuto = costos_minuto
+        self.costos_operativos= costos_operativos
         self.costos_mantenimiento = costos_mantenimiento
         self.costos_recarga = costos_recarga
         self.capacidades_centro = capacidades_centro
