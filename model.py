@@ -1,6 +1,7 @@
 from pyomo.environ import * 
-
+import networkx as nx
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Cambiar las rutas de los archivos
 clients = pd.read_csv(r'case_1_base/Clients.csv')  # Clientes
@@ -125,13 +126,19 @@ costos_operativos_dict = {(row['Vehiculo'], row['Desde'], row['Hacia']): row['Co
 # Convertir archivos CSV a diccionarios
 
 tiempos_dict = {(row['Desde'], row['Hacia']): row['Tiempo'] for _, row in tiempos.iterrows()}
+# Crear diccionario de coordenadas para todos los nodos
+all_coords = {
+    **{row['LocationID']: (row['Longitude'], row['Latitude']) for _, row in clients.iterrows()},
+    **{row['LocationID']: (row['Longitude'], row['Latitude']) for _, row in depots.iterrows()}
+}
 
 # Validar dimensiones
 print(f"Clientes: {len(clientes)}, Centros: {len(centros)}, Vehículos: {len(vehiculos)}, Nodos: {len(nodos)}")
 
 
+
 class VRPModel:
-    def __init__(self, clientes, centros, vehiculos, productos, distancias_dict, tiempos, demandas, capacidad_vehiculo, rango_vehiculo, costos_operativos_dict, costos_mantenimiento, costos_recarga):
+    def __init__(self, clientes, centros, vehiculos, productos, distancias_dict, tiempos, demandas, capacidad_vehiculo, rango_vehiculo, costos_operativos_dict, costos_mantenimiento, costos_recarga,all_coords):
         """
         Inicializar parámetros del modelo VRP.
         """
@@ -149,9 +156,9 @@ class VRPModel:
         self.costos_operativos_dict= costos_operativos_dict
         self.costos_mantenimiento = costos_mantenimiento
         self.costos_recarga = costos_recarga
+        self.all_coords = all_coords
 
-        print(self.clientes)
-        print(self.centros)
+        
         
         # Crear modelo Pyomo
         self.model = ConcreteModel()
@@ -282,10 +289,32 @@ class VRPModel:
         
 
     def display_results(self):
-        """
-        Mostrar los resultados del modelo.
-        """
-        self.model.x.display()
+        print("\nRutas asignadas por vehículo:")
+        for v in self.vehiculos:
+            print(f"Vehículo: {v}")
+            for i in self.nodos:
+                for j in self.nodos:
+                    if i != j and value(self.model.x[i, j, v]) > 0.5:
+                        print(f"   De {i} a {j}")
+
+    def visualize_routes(self):
+        valid_edges = []
+        for v in self.vehiculos:
+            for i in self.nodos:
+                for j in self.nodos:
+                    if i != j and value(self.model.x[i, j, v]) > 0.5:
+                        valid_edges.append((i, j, v))
+
+        G = nx.DiGraph()
+        for i, j, v in valid_edges:
+            G.add_edge(i, j, vehicle=v)
+
+        pos = {node: (coord[0], coord[1]) for node, coord in self.all_coords.items()}
+
+        plt.figure(figsize=(10, 8))
+        nx.draw(G, pos, with_labels=True, edge_color='blue', node_size=500, node_color='lightblue', font_size=10)
+        plt.title("Rutas Optimizadas de Vehículos")
+        plt.show()
 
 # Instanciar la clase del modelo
 vrp = VRPModel(
@@ -300,7 +329,8 @@ vrp = VRPModel(
     rango_vehiculo=rango_vehiculo,
     costos_operativos_dict=costos_operativos_dict,
     costos_mantenimiento=costos_mantenimiento,
-    costos_recarga=costos_recarga
+    costos_recarga=costos_recarga,
+    all_coords=all_coords
 )
 
 # Construir el modelo
@@ -309,4 +339,4 @@ vrp.build_model()
 # Resolver el modelo
 vrp.solve_model()
 
-vrp.display_results()
+vrp.visualize_routes()
