@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 # Ruta donde se encuentran los archivos CSV
-ruta_csv = 'case_2_costs_vehicules'
+ruta_csv = 'case_3_costs_vehicles'
 
 # Crear una lista para almacenar los datos combinados
 dataframes = []
@@ -18,7 +18,7 @@ for archivo in os.listdir(ruta_csv):
 df_combinado = pd.concat(dataframes, ignore_index=True)
 
 # Guardar el archivo combinado en un nuevo CSV
-ruta_salida = os.path.join(ruta_csv, 'costos_operativos_combinados2.csv')
+ruta_salida = os.path.join(ruta_csv, 'costos_operativos_combinados3.csv')
 df_combinado.to_csv(ruta_salida, index=False)
 
 print(f"Archivos combinados y guardados en: {ruta_salida}")
