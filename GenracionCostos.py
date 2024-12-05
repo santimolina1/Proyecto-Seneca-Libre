@@ -1,10 +1,10 @@
 import pandas as pd
 
 # Datos ya cargados
-vehicles = pd.read_csv('case_2_cost\Vehicles.csv')  # Vehículos
+vehicles = pd.read_csv('case_4_multi_product\Vehicles.csv')  # Vehículos
 vehicles['ID'] = ['V' + str(i + 1) for i in range(len(vehicles))]  # Generar IDs para vehículos
-distancias = pd.read_csv('Matrices/distancias2.csv')  # Matriz de distancias
-tiempos = pd.read_csv('Matrices/tiempos2.csv')  # Matriz de tiempos
+distancias = pd.read_csv('Matrices/distancias4.csv')  # Matriz de distancias
+tiempos = pd.read_csv('Matrices/tiempos4.csv')  # Matriz de tiempos
 
 costos_km = {
     'Gas Car': 5000,

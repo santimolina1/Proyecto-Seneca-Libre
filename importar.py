@@ -24,7 +24,7 @@ def obtener_matrices_osrm(ubicaciones):
     # URL para la API de OSRM
     url = f'http://router.project-osrm.org/table/v1/driving/{result}?annotations=distance,duration'
     response = requests.get(url)
-
+    
     # Verificar si la solicitud fue exitosa
     if response.status_code == 200:
         data = response.json()
